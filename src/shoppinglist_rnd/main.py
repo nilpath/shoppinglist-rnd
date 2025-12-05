@@ -23,7 +23,7 @@ if __name__ == "__main__":
     ingredients = [
         Ingredient(name="Äpplen (Royal Gala)", quantity=2, unit="pcs"),
         Ingredient(name="Mjölk", quantity=1, unit="liter", notes="1.5%, lång hållbarhet"),
-        Ingredient(name="Fryst Kycklingbröstfilé", quantity=500, unit="grams"),
+        Ingredient(name="Fryst Kycklingbröstfilé", quantity=500, unit="grams", notes="eldorado"),
         Ingredient(name="Frysta ärtor", quantity=300, unit="grams"),
     ]
 

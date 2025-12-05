@@ -16,8 +16,10 @@ class WillysSearchPage(BasePage):
 
     # Product listing selectors
     PRODUCT_GRID = 'section > div:nth-child(1) [data-testid="grid"]'
+    RELATED_PRODUCT_GRID = 'section > div:nth-child(2) [data-testid="grid"]'
     PRODUCT_CARD = '[data-testid="product"]'
     PRODUCT_NAME = '[itemprop="name"]'
+    PRODUCT_BRAND = 'span[itemprop="brand"]'
     PRODUCT_PRICE = '[data-testid="product-price-DEFAULT"]'
     PRODUCT_UNIT_PRICE = 'div:nth-of-type(2) > div:nth-of-type(3)'
     PRODUCT_IMAGE = 'img'
@@ -28,7 +30,7 @@ class WillysSearchPage(BasePage):
     QUANTITY_DECREASE = 'button[name="decrease"]'
 
     # Cart
-    MINI_CART_BUTTON = 'button[data-testid="mini-cart-button"] > span:not([data-testid="cart-icon"])'
+    MINI_CART_BUTTON = 'button[data-testid="mini-cart-button"] div > span:not([data-testid="cart-icon"])'
     CART_POPUP_BACKDROP = 'div[data-backdrop="true"]'
     
 
@@ -75,10 +77,11 @@ class WillysSearchPage(BasePage):
             total_count=len(products),
         )
 
-    def _wait_for_cart_update(self, previous_text: str, timeout: int = 5000) -> None:
+    def _wait_for_cart_update(self, previous_text: str, timeout: int = 3000) -> None:
         """Wait for the mini cart button to change from its previous state."""
         try:
-            self._page.locator(self.MINI_CART_BUTTON).wait_for(
+            self._page.wait_for_selector(
+                self.MINI_CART_BUTTON,
                 state="visible",
                 timeout=timeout,
             )
@@ -105,10 +108,11 @@ class WillysSearchPage(BasePage):
         except Exception:
             pass
 
-    def _wait_for_search_results(self, query: str, timeout: int = 10000) -> None:
+    def _wait_for_search_results(self, query: str, timeout: int = 5000) -> None:
         """Wait for search results to appear."""
         try:
-            self._page.locator(f'h1:has-text("\\"{query}\\"")').wait_for(
+            self._page.wait_for_selector(
+                f'h1:has-text("\\"{query}\\"")',
                 state="visible",
                 timeout=timeout,
             )
@@ -116,18 +120,32 @@ class WillysSearchPage(BasePage):
             pass
 
     def _extract_products(self) -> list[Product]:
-        """Extract product information from search results."""
+        """Extract product information from search results and related products."""
         products = []
-        grid = self._page.locator(self.PRODUCT_GRID).first
-        product_cards = grid.locator(self.PRODUCT_CARD).all()
 
-        for card in product_cards:
-            try:
-                product = self._extract_product_from_card(card)
-                if product:
-                    products.append(product)
-            except Exception:
-                continue
+        # Extract from main product grid
+        main_grid = self._page.locator(self.PRODUCT_GRID).first
+        if main_grid.count() > 0:
+            product_cards = main_grid.locator(self.PRODUCT_CARD).all()
+            for card in product_cards:
+                try:
+                    product = self._extract_product_from_card(card)
+                    if product:
+                        products.append(product)
+                except Exception:
+                    continue
+
+        # Extract from related products grid
+        related_grid = self._page.locator(self.RELATED_PRODUCT_GRID).first
+        if related_grid.count() > 0:
+            related_cards = related_grid.locator(self.PRODUCT_CARD).all()
+            for card in related_cards:
+                try:
+                    product = self._extract_product_from_card(card)
+                    if product:
+                        products.append(product)
+                except Exception:
+                    continue
 
         return products
 
@@ -152,6 +170,16 @@ class WillysSearchPage(BasePage):
             except Exception:
                 pass
 
+            brand = None
+            amount = None
+            try:
+                brand_elem = card.locator(self.PRODUCT_BRAND).first
+                if brand_elem.is_visible():
+                    brand_text = self.get_text(brand_elem).strip()
+                    brand, amount = self._parse_brand_amount(brand_text)
+            except Exception:
+                pass
+
             image_url = None
             try:
                 img_elem = card.locator(self.PRODUCT_IMAGE).first
@@ -166,6 +194,8 @@ class WillysSearchPage(BasePage):
                 name=name,
                 price=price,
                 unit_price=unit_price,
+                brand=brand,
+                amount=amount,
                 image_url=image_url,
                 product_id=product_id,
             )
@@ -174,7 +204,14 @@ class WillysSearchPage(BasePage):
             return None
 
     def _parse_price(self, price_text: str) -> float:
-        """Parse price from text like '25,90 kr' or '25.90'."""
+        """Parse price from text like '1990/kg', '1990/st', or '25,90 kr'."""
+        # Check for öre format with unit suffix (e.g., "1990/kg", "1990/st")
+        ore_match = re.match(r"(\d+)/(?:kg|st|l|förp)", price_text.strip())
+        if ore_match:
+            ore_value = int(ore_match.group(1))
+            return ore_value / 100.0
+
+        # Fallback: handle traditional format like "25,90 kr"
         cleaned = re.sub(r"[^\d,.]", "", price_text)
         cleaned = cleaned.replace(",", ".")
 
@@ -183,9 +220,25 @@ class WillysSearchPage(BasePage):
         except Exception:
             return 0.0
 
+    def _parse_brand_amount(self, brand_text: str) -> tuple[str | None, str | None]:
+        """Parse brand and amount from text like 'Eldorado 300g' or 'Arla 1.5L'."""
+        if not brand_text:
+            return None, None
+
+        # Match amount pattern at end: number + optional decimal + unit (g, kg, l, ml, cl, dl, st)
+        match = re.search(r'^(.+?)\s+(\d+(?:[.,]\d+)?\s*(?:g|kg|l|ml|cl|dl|st))$', brand_text.strip(), re.IGNORECASE)
+        if match:
+            brand = match.group(1).strip()
+            amount = match.group(2).strip()
+            return brand, amount
+
+        # No amount found, return whole string as brand
+        return brand_text.strip(), None
+
     def get_product_card(self, product_name: str) -> Locator | None:
         """
         Find a product card by name (partial match).
+        Searches both main results and related products.
 
         Args:
             product_name: Product name to search for.
@@ -193,17 +246,21 @@ class WillysSearchPage(BasePage):
         Returns:
             Locator for the product card or None.
         """
-        grid = self._page.locator(self.PRODUCT_GRID).first
-        cards = grid.locator(self.PRODUCT_CARD).all()
-
-        for card in cards:
-            try:
-                name_elem = card.locator(self.PRODUCT_NAME).first
-                name = self.get_text(name_elem).lower()
-                if product_name.lower() in name:
-                    return card
-            except Exception:
+        # Search in main grid first, then related products
+        for grid_selector in [self.PRODUCT_GRID, self.RELATED_PRODUCT_GRID]:
+            grid = self._page.locator(grid_selector).first
+            if grid.count() == 0:
                 continue
+            cards = grid.locator(self.PRODUCT_CARD).all()
+
+            for card in cards:
+                try:
+                    name_elem = card.locator(self.PRODUCT_NAME).first
+                    name = self.get_text(name_elem).lower()
+                    if product_name.lower() in name:
+                        return card
+                except Exception:
+                    continue
 
         return None
 

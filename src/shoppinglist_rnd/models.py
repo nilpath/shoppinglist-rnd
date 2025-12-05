@@ -46,6 +46,7 @@ class Product(BaseModel):
     image_url: str | None = Field(default=None, description="URL to product image")
     product_id: str | None = Field(default=None, description="Unique product identifier")
     brand: str | None = Field(default=None, description="Product brand")
+    amount: str | None = Field(default=None, description="Product amount/size (e.g., '300g', '1.5L')")
     quantity_in_cart: int = Field(default=0, description="Current quantity in cart")
 
 

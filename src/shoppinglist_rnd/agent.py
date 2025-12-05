@@ -17,11 +17,18 @@ Pick a product based on:
 SYSTEM_PROMPT_QUANTITY_UNIT_CONVERTER = """
 Convert ingredient quantities and units based on context.
 
+General rules:
+- liquids are typically measured in liters (liter, dl, ml)
+- solids are typically measured in grams (kg, gram, hg)
+- convert spoons and cups to ml/grams based on common Swedish cooking measures
+
+Examples:
 name, quantity, unit -> converted quantity,converted unit
 soja, 1, msk -> 15, ml
 vetemjöl, 1, dl -> 90, gram
 creme fraiche, 200, gram -> 2, dl
 socker, 1, dl -> 85, gram
+Kyckling, 2, kg -> 2000, gram
 
 """
 
@@ -85,7 +92,8 @@ class ShoppingListAgent(dspy.Module):
 
         shopping_result = self.shopper(
             context=SYSTEM_PROMPT_SHOPPER,
-            ingredients=ingredients
+            ingredients=ingredients,
+            max_iters=len(ingredients) * 3,
         )
 
         return dspy.Prediction(

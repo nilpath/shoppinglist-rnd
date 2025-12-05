@@ -48,17 +48,17 @@ class BasePage:
         """Wait for page to be fully loaded."""
         self._page.wait_for_load_state("networkidle", timeout=timeout)
 
-    def get_text(self, locator: Locator) -> str:
+    def get_text(self, locator: Locator, timeout: int = 1000) -> str:
         """Safely get text content from a locator."""
         try:
-            return locator.text_content() or ""
+            return locator.text_content(timeout=timeout) or ""
         except Exception:
             return ""
 
-    def is_element_visible(self, selector: str, timeout: int = 5000) -> bool:
+    def is_element_visible(self, selector: str, state: str = "visible", timeout: int = 5000) -> bool:
         """Check if element is visible within timeout."""
         try:
-            self._page.locator(selector).wait_for(state="visible", timeout=timeout)
+            self._page.wait_for_selector(selector, state=state, timeout=timeout)
             return True
         except Exception:
             return False
