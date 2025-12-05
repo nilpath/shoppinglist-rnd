@@ -14,3 +14,9 @@ wheels/
 
 # Environment variables
 .env
+
+# project
+.claude/
+.idea/
+.vscode/
+.DS_Store
