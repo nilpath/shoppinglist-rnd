@@ -14,3 +14,13 @@ wheels/
 
 # Environment variables
 .env
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
+
+# SQLite databases
+*.sqlite
