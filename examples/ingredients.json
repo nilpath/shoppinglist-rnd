@@ -1,0 +1,7 @@
+[
+  {"name": "mjölk", "quantity": 5, "unit": "dl"},
+  {"name": "ägg", "quantity": 3, "unit": "st"},
+  {"name": "vetemjöl", "quantity": 3, "unit": "dl"},
+  {"name": "smör", "quantity": 50, "unit": "g"},
+  {"name": "socker", "quantity": 1, "unit": "msk"}
+]
