@@ -11,7 +11,9 @@ Pick a product based on:
 - Ingredient notes (e.g., "1.5%, läng hållbarhet")
 - Ingredient category (e.g., "Dairy", "Fruit and vegetables")
 - Best unit price (e.g., "25 kr/kg")
-- Closest match  to ingredient quantity and unit (e.g., "1 liter", "500 grams")
+- Closest match to ingredient quantity and unit (e.g., "1 liter", "500 grams")
+
+IMPORTANT: After adding all ingredients to the cart, navigate to the shopping cart as the final step.
 """
 
 SYSTEM_PROMPT_QUANTITY_UNIT_CONVERTER = """

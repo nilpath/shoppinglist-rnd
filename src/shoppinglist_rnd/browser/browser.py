@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright, Browser as PlaywrightBrowser, BrowserContext, Page
 
 from shoppinglist_rnd.browser.pages.willys_search_page import WillysSearchPage
+from shoppinglist_rnd.browser.pages.willys_cart_page import WillysCartPage
 from shoppinglist_rnd.models import SearchResult, AddToCartResult
 
 
@@ -14,6 +15,7 @@ class Browser:
         self._page: Page = self._context.new_page()
 
         self._willys_search_page: WillysSearchPage | None = None
+        self._willys_cart_page: WillysCartPage | None = None
 
     @property
     def page(self) -> Page:
@@ -26,6 +28,13 @@ class Browser:
         if self._willys_search_page is None:
             self._willys_search_page = WillysSearchPage(self._page)
         return self._willys_search_page
+
+    @property
+    def willys_cart(self) -> WillysCartPage:
+        """Get Willys cart page object."""
+        if self._willys_cart_page is None:
+            self._willys_cart_page = WillysCartPage(self._page)
+        return self._willys_cart_page
 
     def goto(self, url: str) -> None:
         """Navigate to a URL."""
@@ -103,6 +112,16 @@ class Browser:
             return f"Changed quantity of '{product_name}' to {quantity}"
         return f"Failed to change quantity for '{product_name}'"
 
+    def go_to_cart(self) -> str:
+        """
+        Navigate to the Willys shopping cart page.
+
+        Returns:
+            String confirming navigation to cart.
+        """
+        self.willys_cart.navigate()
+        return "Navigated to shopping cart at https://www.willys.se/varukorg"
+
     def get_tools(self) -> list:
         """
         Get list of browser methods as DSPy tools.
@@ -114,4 +133,5 @@ class Browser:
             self.search_willys,
             self.add_product_to_cart,
             self.change_product_quantity,
+            self.go_to_cart,
         ]

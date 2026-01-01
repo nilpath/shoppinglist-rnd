@@ -65,3 +65,22 @@ class AddToCartResult(BaseModel):
     product_name: str
     quantity: int
     message: str = Field(default="")
+
+
+class CartItem(BaseModel):
+    """Represents an item in the shopping cart."""
+
+    name: str = Field(description="Product name")
+    brand: str | None = Field(default=None, description="Product brand")
+    amount: str | None = Field(default=None, description="Product amount/size")
+    price: float = Field(description="Price per item in SEK")
+    quantity: int = Field(description="Quantity in cart")
+    total_price: float = Field(description="Total price for this item (price * quantity)")
+
+
+class Cart(BaseModel):
+    """Represents the shopping cart contents."""
+
+    items: List[CartItem] = Field(default_factory=list, description="Items in cart")
+    total_items: int = Field(default=0, description="Total number of items")
+    total_price: float = Field(default=0.0, description="Total cart price in SEK")
